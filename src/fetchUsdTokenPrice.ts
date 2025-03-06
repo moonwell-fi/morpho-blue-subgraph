@@ -178,9 +178,10 @@ function fetchPriceFromFeed(feedAddress: Address): BigDecimal {
 }
 
 export function fetchUsdTokenPrice(tokenAddress: Address): BigDecimal {
-  const chainName = dataSource.network(); // returns network name
 
-  if (chainName === "base") {
+  const network = dataSource.network();
+
+  if (network == "base") {
 
     if (basePriceFeedsUsd.has(tokenAddress.toHexString())) {
       const basePriceFeed = basePriceFeedsUsd.get(tokenAddress.toHexString());
@@ -202,14 +203,14 @@ export function fetchUsdTokenPrice(tokenAddress: Address): BigDecimal {
     }
 
 
-  } else if (chainName === "optimism") {
+  } else if (network == "optimism") {
 
     if (optimismPriceFeeds.has(tokenAddress.toHexString())) {
       const optimismPriceFeed = optimismPriceFeeds.get(tokenAddress.toHexString());
       return fetchPriceFromFeed(Address.fromString(optimismPriceFeed));
     }
 
-  } else if (chainName === "mainnet") {
+  } else if (network == "mainnet") {
 
     if (usdPriceFeeds.has(tokenAddress.toHexString())) {
       const chainlinkPriceFeed = Address.fromString(

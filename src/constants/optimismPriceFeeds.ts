@@ -7,5 +7,5 @@ const optimismTokenAddresses = new Map<string, string>()
 
 export const optimismPriceFeeds = new Map<string, string>()
   .set(optimismTokenAddresses.get("WETH"), Address.fromString("0x13e3Ee699D1909E989722E753853AE30b17e08c5").toHexString())
-  .set(optimismTokenAddresses.get("USDC"), Address.fromString("0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6").toHexString())
+  .set(optimismTokenAddresses.get("USDC"), Address.fromString("0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3").toHexString())
   .set(optimismTokenAddresses.get("wstETH"), Address.fromString("0x698B585CbC4407e2D54aa898B2600B53C68958f7").toHexString());
