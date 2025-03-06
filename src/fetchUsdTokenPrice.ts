@@ -1,4 +1,4 @@
-import { Address, BigDecimal, BigInt } from "@graphprotocol/graph-ts";
+import { Address, BigDecimal, BigInt, dataSource } from "@graphprotocol/graph-ts";
 
 import { ChainlinkPriceFeed } from "../generated/MorphoBlue/ChainlinkPriceFeed";
 import { ERC4626 } from "../generated/MorphoBlue/ERC4626";
@@ -6,7 +6,8 @@ import { REth } from "../generated/MorphoBlue/REth";
 import { WstEth } from "../generated/MorphoBlue/WstEth";
 
 import { BIGDECIMAL_ONE, BIGDECIMAL_WAD, BIGINT_WAD } from "./sdk/constants";
-
+import { optimismPriceFeeds } from "./constants/optimismPriceFeeds";
+import { basePriceFeedsBtc, basePriceFeedsEth, basePriceFeedsUsd, baseTokenAddresses } from "./constants/basePriceFeeds";
 // I'm wrapping addresses and formatting them back to string to ensure resilience with capitalization.
 const wbib01 = Address.fromString(
   "0xca2a7068e551d5c4482eb34880b194e4b945712f"
@@ -86,6 +87,7 @@ const sUSDE = Address.fromString(
 const usde = Address.fromString(
   "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3"
 ).toHexString();
+
 
 const usdPriceFeeds = new Map<string, string>()
   .set(
@@ -176,93 +178,128 @@ function fetchPriceFromFeed(feedAddress: Address): BigDecimal {
 }
 
 export function fetchUsdTokenPrice(tokenAddress: Address): BigDecimal {
-  if (usdPriceFeeds.has(tokenAddress.toHexString())) {
-    const chainlinkPriceFeed = Address.fromString(
-      usdPriceFeeds.get(tokenAddress.toHexString())
-    );
+  const chainName = dataSource.network(); // returns network name
 
-    return fetchPriceFromFeed(chainlinkPriceFeed);
+  if (chainName === "base") {
+
+    const basePriceFeed = basePriceFeedsUsd[tokenAddress.toHexString()];
+    if (basePriceFeed) {
+      return fetchPriceFromFeed(basePriceFeed);
+    }
+
+    const basePriceFeedBtc = basePriceFeedsBtc[tokenAddress.toHexString()];
+    if (basePriceFeedBtc) {
+      return fetchPriceFromFeed(basePriceFeedBtc).times(
+        fetchUsdTokenPrice(Address.fromString(baseTokenAddresses.WBTC))
+      );
+    }
+
+    const basePriceFeedEth = basePriceFeedsEth[tokenAddress.toHexString()];
+    if (basePriceFeedEth) {
+      return fetchPriceFromFeed(basePriceFeedEth).times(
+        fetchUsdTokenPrice(Address.fromString(baseTokenAddresses.WETH))
+      );
+    }
+
+
+  } else if (chainName === "optimism") {
+
+    const optimismPriceFeed = optimismPriceFeeds[tokenAddress.toHexString()];
+    if (optimismPriceFeed) {
+      return fetchPriceFromFeed(optimismPriceFeed);
+    }
+
+  } else if (chainName === "mainnet") {
+
+    if (usdPriceFeeds.has(tokenAddress.toHexString())) {
+      const chainlinkPriceFeed = Address.fromString(
+        usdPriceFeeds.get(tokenAddress.toHexString())
+      );
+
+      return fetchPriceFromFeed(chainlinkPriceFeed);
+    }
+
+    if (ethPriceFeeds.has(tokenAddress.toHexString())) {
+      const chainlinkPriceFeed = Address.fromString(
+        ethPriceFeeds.get(tokenAddress.toHexString())
+      );
+      return fetchPriceFromFeed(chainlinkPriceFeed).times(
+        fetchUsdTokenPrice(Address.fromString(weth))
+      );
+    }
+
+    if (eurPriceFeeds.has(tokenAddress.toHexString())) {
+      const chainlinkPriceFeed = Address.fromString(
+        eurPriceFeeds.get(tokenAddress.toHexString())
+      );
+
+      return fetchPriceFromFeed(chainlinkPriceFeed).times(
+        fetchUsdTokenPrice(Address.fromString(EURe))
+      );
+    }
+
+    if (tokenAddress.equals(Address.fromString(wstEth))) {
+      const wstEthContract = WstEth.bind(Address.fromString(wstEth));
+      return wstEthContract
+        .getStETHByWstETH(BIGINT_WAD)
+        .toBigDecimal()
+        .div(BIGDECIMAL_WAD)
+        .times(fetchUsdTokenPrice(Address.fromString(weth)));
+    }
+
+    if (tokenAddress.equals(Address.fromString(rEth))) {
+      const rEthContract = REth.bind(Address.fromString(rEth));
+      return rEthContract
+        .getExchangeRate()
+        .toBigDecimal()
+        .div(BIGDECIMAL_WAD)
+        .times(fetchUsdTokenPrice(Address.fromString(weth)));
+    }
+
+    if (tokenAddress.equals(Address.fromString(wbtc))) {
+      const wbtcBtcPriceFeed = Address.fromString(
+        "0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23"
+      );
+
+      const btcUsdPriceFeed = Address.fromString(
+        "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c"
+      );
+
+      return fetchPriceFromFeed(btcUsdPriceFeed).times(
+        fetchPriceFromFeed(wbtcBtcPriceFeed)
+      );
+    }
+
+    if (tokenAddress.equals(Address.fromString(sdai))) {
+      const sDaiContract = ERC4626.bind(Address.fromString(sdai));
+      return sDaiContract
+        .convertToAssets(BIGINT_WAD)
+        .toBigDecimal()
+        .div(BIGDECIMAL_WAD)
+        .times(fetchUsdTokenPrice(Address.fromString(dai)));
+    }
+
+    if (
+      tokenAddress.equals(Address.fromString(wusdm)) ||
+      tokenAddress.equals(Address.fromString(sUSDE))
+    ) {
+      const erc4626 = ERC4626.bind(Address.fromString(wusdm));
+      // exchange rate of the underlying is 1 USD
+      return erc4626
+        .convertToAssets(BIGINT_WAD)
+        .toBigDecimal()
+        .div(BIGDECIMAL_WAD);
+    }
+
+    if (
+      tokenAddress.equals(Address.fromString(pyUsd)) ||
+      tokenAddress.equals(Address.fromString(usde))
+    ) {
+      // price is hardcoded at 1 since the token is regulated. This is also the case in the trusted oracles.
+      return BIGDECIMAL_ONE;
+    }
   }
 
-  if (ethPriceFeeds.has(tokenAddress.toHexString())) {
-    const chainlinkPriceFeed = Address.fromString(
-      ethPriceFeeds.get(tokenAddress.toHexString())
-    );
-    return fetchPriceFromFeed(chainlinkPriceFeed).times(
-      fetchUsdTokenPrice(Address.fromString(weth))
-    );
-  }
-
-  if (eurPriceFeeds.has(tokenAddress.toHexString())) {
-    const chainlinkPriceFeed = Address.fromString(
-      eurPriceFeeds.get(tokenAddress.toHexString())
-    );
-
-    return fetchPriceFromFeed(chainlinkPriceFeed).times(
-      fetchUsdTokenPrice(Address.fromString(EURe))
-    );
-  }
-
-  if (tokenAddress.equals(Address.fromString(wstEth))) {
-    const wstEthContract = WstEth.bind(Address.fromString(wstEth));
-    return wstEthContract
-      .getStETHByWstETH(BIGINT_WAD)
-      .toBigDecimal()
-      .div(BIGDECIMAL_WAD)
-      .times(fetchUsdTokenPrice(Address.fromString(weth)));
-  }
-
-  if (tokenAddress.equals(Address.fromString(rEth))) {
-    const rEthContract = REth.bind(Address.fromString(rEth));
-    return rEthContract
-      .getExchangeRate()
-      .toBigDecimal()
-      .div(BIGDECIMAL_WAD)
-      .times(fetchUsdTokenPrice(Address.fromString(weth)));
-  }
-
-  if (tokenAddress.equals(Address.fromString(wbtc))) {
-    const wbtcBtcPriceFeed = Address.fromString(
-      "0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23"
-    );
-
-    const btcUsdPriceFeed = Address.fromString(
-      "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c"
-    );
-
-    return fetchPriceFromFeed(btcUsdPriceFeed).times(
-      fetchPriceFromFeed(wbtcBtcPriceFeed)
-    );
-  }
-
-  if (tokenAddress.equals(Address.fromString(sdai))) {
-    const sDaiContract = ERC4626.bind(Address.fromString(sdai));
-    return sDaiContract
-      .convertToAssets(BIGINT_WAD)
-      .toBigDecimal()
-      .div(BIGDECIMAL_WAD)
-      .times(fetchUsdTokenPrice(Address.fromString(dai)));
-  }
-
-  if (
-    tokenAddress.equals(Address.fromString(wusdm)) ||
-    tokenAddress.equals(Address.fromString(sUSDE))
-  ) {
-    const erc4626 = ERC4626.bind(Address.fromString(wusdm));
-    // exchange rate of the underlying is 1 USD
-    return erc4626
-      .convertToAssets(BIGINT_WAD)
-      .toBigDecimal()
-      .div(BIGDECIMAL_WAD);
-  }
-
-  if (
-    tokenAddress.equals(Address.fromString(pyUsd)) ||
-    tokenAddress.equals(Address.fromString(usde))
-  ) {
-    // price is hardcoded at 1 since the token is regulated. This is also the case in the trusted oracles.
-    return BIGDECIMAL_ONE;
-  }
 
   return BigDecimal.zero();
 }
