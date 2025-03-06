@@ -182,31 +182,31 @@ export function fetchUsdTokenPrice(tokenAddress: Address): BigDecimal {
 
   if (chainName === "base") {
 
-    const basePriceFeed = basePriceFeedsUsd[tokenAddress.toHexString()];
-    if (basePriceFeed) {
-      return fetchPriceFromFeed(basePriceFeed);
+    if (basePriceFeedsUsd.has(tokenAddress.toHexString())) {
+      const basePriceFeed = basePriceFeedsUsd.get(tokenAddress.toHexString());
+      return fetchPriceFromFeed(Address.fromString(basePriceFeed));
     }
 
-    const basePriceFeedBtc = basePriceFeedsBtc[tokenAddress.toHexString()];
-    if (basePriceFeedBtc) {
-      return fetchPriceFromFeed(basePriceFeedBtc).times(
-        fetchUsdTokenPrice(Address.fromString(baseTokenAddresses.WBTC))
+    if (basePriceFeedsBtc.has(tokenAddress.toHexString())) {
+      const basePriceFeedBtc = basePriceFeedsBtc.get(tokenAddress.toHexString());
+      return fetchPriceFromFeed(Address.fromString(basePriceFeedBtc)).times(
+        fetchUsdTokenPrice(Address.fromString(baseTokenAddresses.get("WBTC")))
       );
     }
 
-    const basePriceFeedEth = basePriceFeedsEth[tokenAddress.toHexString()];
-    if (basePriceFeedEth) {
-      return fetchPriceFromFeed(basePriceFeedEth).times(
-        fetchUsdTokenPrice(Address.fromString(baseTokenAddresses.WETH))
+    if (basePriceFeedsEth.has(tokenAddress.toHexString())) {
+      const basePriceFeedEth = basePriceFeedsEth.get(tokenAddress.toHexString());
+      return fetchPriceFromFeed(Address.fromString(basePriceFeedEth)).times(
+        fetchUsdTokenPrice(Address.fromString(baseTokenAddresses.get("WETH")))
       );
     }
 
 
   } else if (chainName === "optimism") {
 
-    const optimismPriceFeed = optimismPriceFeeds[tokenAddress.toHexString()];
-    if (optimismPriceFeed) {
-      return fetchPriceFromFeed(optimismPriceFeed);
+    if (optimismPriceFeeds.has(tokenAddress.toHexString())) {
+      const optimismPriceFeed = optimismPriceFeeds.get(tokenAddress.toHexString());
+      return fetchPriceFromFeed(Address.fromString(optimismPriceFeed));
     }
 
   } else if (chainName === "mainnet") {
