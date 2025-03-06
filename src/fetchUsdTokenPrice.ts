@@ -1,4 +1,4 @@
-import { Address, BigDecimal, BigInt, dataSource } from "@graphprotocol/graph-ts";
+import { Address, BigDecimal, BigInt, dataSource, log } from "@graphprotocol/graph-ts";
 
 import { ChainlinkPriceFeed } from "../generated/MorphoBlue/ChainlinkPriceFeed";
 import { ERC4626 } from "../generated/MorphoBlue/ERC4626";
@@ -166,8 +166,13 @@ const eurPriceFeeds = new Map<string, string>().set(
 
 function fetchPriceFromFeed(feedAddress: Address): BigDecimal {
   const chainlinkPriceFeed = ChainlinkPriceFeed.bind(feedAddress);
-  return chainlinkPriceFeed
-    .latestRoundData()
+  let latestRoundData = chainlinkPriceFeed.try_latestRoundData();
+  if (latestRoundData.reverted) {
+    log.warning("[fetchPriceFromFeed] latestRoundData reverted for feed {}", [feedAddress.toHexString()]);
+    return BigDecimal.zero();
+  }
+
+  return latestRoundData.value
     .getAnswer()
     .toBigDecimal()
     .div(
