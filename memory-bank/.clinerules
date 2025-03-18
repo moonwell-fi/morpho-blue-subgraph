@@ -1,0 +1,123 @@
+# Clinerules for Morpho Blue Subgraph
+
+## Project Intelligence
+
+### Critical Implementation Paths
+- Event handlers in src/ are the core of the subgraph, mapping blockchain events to entity updates
+- The protocol initializer (src/initializers/protocol.ts) sets up core protocol configuration
+- Market handlers manage all market states and metrics
+- MetaMorpho handlers track vault operations and allocations
+- Chainlink integration provides critical price feed data
+
+### Project-Specific Patterns
+1. **Entity Creation Pattern**: Always check if an entity exists before loading or creating
+   ```typescript
+   let entity = Entity.load(id)
+   if (!entity) {
+     entity = new Entity(id)
+     // Set required fields
+   }
+   ```
+
+2. **ID Formatting Pattern**: Consistent ID generation for different entity types
+   - Markets: `marketId.toHexString()`
+   - Positions: `account-market-side-counter`
+   - Events: `txHash-logIndex`
+   - Snapshots: `entity-timestamp`
+
+3. **Interest Calculation**: Always use the `shares.ts` module for share/asset conversion
+   ```typescript
+   import { sharesForAmount, amountForShares } from '../maths/shares'
+   ```
+
+4. **Price Feed Usage**: Use the fetchUsdTokenPrice.ts utility for all USD conversions
+   ```typescript
+   import { fetchUsdTokenPrice } from './fetchUsdTokenPrice'
+   ```
+
+5. **Error Handling Pattern**: Log errors but continue processing where possible
+   ```typescript
+   log.warning("Error processing {}: {}", [entity, error.message])
+   ```
+
+### Implementation Preferences
+1. **TypeScript Style**:
+   - Use explicit typing for all function parameters and returns
+   - Prefer const over let where variables aren't reassigned
+   - Use descriptive variable names that convey purpose
+
+2. **Data Handling**:
+   - Convert BigInt to BigDecimal for displaying financial values
+   - Use the BD_18 (BigDecimal with 18 decimals) constant for conversions
+   - Calculate percentages in decimals (0.05 instead of 5%)
+
+3. **Event Processing**:
+   - Process events in chronological order within transactions
+   - Update derived metrics after modifying primary entities
+   - Create snapshots to preserve historical state
+
+4. **Schema Patterns**:
+   - Use @derivedFrom for reverse relationships when possible
+   - Implement interfaces for shared entity fields
+   - Define entity IDs uniquely and consistently
+
+### Known Challenges
+1. **Price Oracle Handling**:
+   - Fallback to previous price if current price is zero or invalid
+   - Log warnings for significant price deviations
+   - Maintain historical price references for validation
+
+2. **Numerical Precision**:
+   - Use appropriate decimal precision for different calculation types
+   - Interest rates: 18 decimals 
+   - Asset amounts: Token-specific decimals
+   - USD values: 2-6 decimals depending on context
+
+3. **Share-Based Accounting**:
+   - Always update share indices before calculating asset amounts
+   - Handle rounding carefully to prevent dust amounts
+   - Keep both share and asset amounts in entities
+
+4. **Event Ordering**:
+   - Be aware of transaction-level events vs. block-level events
+   - Handle multiple events from single transactions carefully
+   - Consider event dependencies in calculation order
+
+### Evolution of Project Decisions
+1. **Schema Migration Strategy**:
+   - Additive changes preferred over breaking changes
+   - Keep backward compatibility when possible
+   - Document deprecated fields before removal
+
+2. **Network Support Evolution**:
+   - Started with Ethereum mainnet, expanded to L2s
+   - Each network requires specific configuration and deployment
+   - Common code base with network-specific parameters
+
+3. **MetaMorpho Integration**:
+   - Initially separate from core protocol
+   - Now fully integrated with specialized entities
+   - Public Allocator added as extension
+
+### Tool Usage Patterns
+1. **Deployment Workflow**:
+   - Build for specific network: `npm run build:{network}`
+   - Deploy to specific network: `npm run deploy:studio:{network}`
+   - Test locally before production deployment
+
+2. **Development Cycle**:
+   - Update ABI definitions if contract changes
+   - Update schema.graphql for entity changes
+   - Generate types with codegen
+   - Implement handlers
+   - Test with local Graph node
+
+3. **Testing Strategy**:
+   - Compare indexed data against known on-chain values
+   - Use specific transactions as test cases
+   - Validate calculations with manual verification
+
+4. **Debug Techniques**:
+   - Use log.debug for temporary logging during development
+   - Check subgraph status in Graph explorer
+   - Verify entity relationships with sample queries
