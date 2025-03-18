@@ -538,6 +538,7 @@ export class DataManager {
     const inputTokenPriceUSD = this._inputToken.updatePrice();
     const borrowableTokenPriceUSD = this._borrowedToken.updatePrice();
     this._market.inputTokenPriceUSD = inputTokenPriceUSD;
+    this._market.outputTokenPriceUSD = borrowableTokenPriceUSD;
 
     const totalCollateralUSD = this._market.totalCollateral
       .toBigDecimal()

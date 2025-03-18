@@ -58,9 +58,9 @@ export function createMarket(
   market.liquidationThreshold = lltvBD;
   market.liquidationPenalty = marketStruct
     ? getLiquidationIncentiveFactor(marketStruct.lltv)
-        .toBigDecimal()
-        .div(BIGDECIMAL_WAD)
-        .minus(BIGDECIMAL_ONE)
+      .toBigDecimal()
+      .div(BIGDECIMAL_WAD)
+      .minus(BIGDECIMAL_ONE)
     : BigDecimal.zero();
 
   market.canIsolate = true;
@@ -70,6 +70,8 @@ export function createMarket(
   market.inputToken = collateralToken.getToken().id;
   market.inputTokenBalance = BigInt.zero();
   market.inputTokenPriceUSD = collateralToken.getPriceUSD();
+  market.outputTokenPriceUSD = loanToken.getPriceUSD();
+
   market.rates = []; // initialized to zero, modified later
   market.reserves = BigDecimal.zero();
   market.reserveFactor = BigDecimal.zero();

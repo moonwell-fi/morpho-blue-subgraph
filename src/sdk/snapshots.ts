@@ -92,10 +92,13 @@ export class SnapshotManager {
       snapshot.hourlyTransferUSD = BigDecimal.zero();
       snapshot.hourlyFlashloanUSD = BigDecimal.zero();
     }
+
     snapshot.blockNumber = this.event.block.number;
     snapshot.timestamp = this.event.block.timestamp;
     snapshot.inputTokenBalance = this.market.inputTokenBalance;
     snapshot.inputTokenPriceUSD = this.market.inputTokenPriceUSD;
+    snapshot.outputTokenPriceUSD = this.market.outputTokenPriceUSD;
+
     snapshot.rates = this.market.rates
       ? this.getSnapshotRates(this.market.rates!, hours.toString())
       : null;
@@ -167,6 +170,7 @@ export class SnapshotManager {
     snapshot.timestamp = this.event.block.timestamp;
     snapshot.inputTokenBalance = this.market.inputTokenBalance;
     snapshot.inputTokenPriceUSD = this.market.inputTokenPriceUSD;
+    snapshot.outputTokenPriceUSD = this.market.outputTokenPriceUSD;
     snapshot.rates = this.market.rates
       ? this.getSnapshotRates(this.market.rates!, days.toString())
       : null;

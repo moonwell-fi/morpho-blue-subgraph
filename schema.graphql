@@ -792,6 +792,9 @@ type Market @entity @regularPolling {
   " Prices in USD of the input token (same order as inputTokens) "
   inputTokenPriceUSD: BigDecimal!
 
+  " Prices in USD of the output token (same order as inputTokens) "
+  outputTokenPriceUSD: BigDecimal!
+
   " All interest rates for this input token. Should be in APR format "
   rates: [InterestRate!]
 

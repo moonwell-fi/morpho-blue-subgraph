@@ -147,8 +147,11 @@ export class PositionManager {
     // take position snapshot
     this._snapshotPosition(event);
     this._countDailyActivePosition(positionCounter, event);
+
+    const snapshots = new SnapshotManager(event, this._market);
     return this._position!;
   }
+
   addBorrowPosition(event: ethereum.Event, sharesBorrowed: BigInt): Position {
     let positionCounter = _PositionCounter.load(this._counterID);
     if (!positionCounter) {
@@ -412,7 +415,7 @@ export class PositionManager {
 
     position.asset =
       transactionType === TransactionType.DEPOSIT_COLLATERAL ||
-      transactionType === TransactionType.WITHDRAW_COLLATERAL
+        transactionType === TransactionType.WITHDRAW_COLLATERAL
         ? this._market.inputToken
         : this._market.borrowedToken;
     position.hashOpened = event.transaction.hash;

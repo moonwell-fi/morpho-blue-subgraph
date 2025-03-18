@@ -188,6 +188,7 @@ export function fetchUsdTokenPrice(tokenAddress: Address): BigDecimal {
 
   if (network == "base") {
 
+    /* TODO: Add back in, performance issue
     if (basePriceFeedsUsd.has(tokenAddress.toHexString())) {
       const basePriceFeed = basePriceFeedsUsd.get(tokenAddress.toHexString());
       return fetchPriceFromFeed(Address.fromString(basePriceFeed));
@@ -206,6 +207,7 @@ export function fetchUsdTokenPrice(tokenAddress: Address): BigDecimal {
         fetchUsdTokenPrice(Address.fromString(baseTokenAddresses.get("WETH")))
       );
     }
+      */
 
 
   } else if (network == "optimism") {
